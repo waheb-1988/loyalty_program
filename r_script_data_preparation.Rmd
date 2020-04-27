@@ -1,0 +1,145 @@
+---
+title: "Loyalty Program"
+output: html_notebook
+---
+
+```{r}
+library(rfm)
+library(descriptr)
+library(kableExtra)
+library(tidyverse)
+library(shiny)
+library(ggpmisc)
+library(shinydashboard)
+library(stringr)
+library(ggpubr)
+library(bigrquery)
+library(hrbrthemes)
+library(openxlsx)
+library(DT)
+library(grDevices)
+library(RColorBrewer)
+library(xplorerr)
+library(haven)
+library(plotly)
+library(gridExtra)
+library(grid)
+library(stringr)
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+library(RgoogleMaps)
+library(maps)
+library(dbscan)
+library(tidyverse)
+library(lubridate)
+library(spatstat)
+library(sp)
+library(rgeos)
+library(maptools)
+library(GISTools)
+library(raster)
+library(fpc)
+library(dplyr)
+library(bigrquery)
+library(leaflet)
+library(leaflet)
+library(data.table)
+library(sp)
+library(rgdal)
+library(maptools)
+library(KernSmooth)
+library(ggpubr)
+
+```
+```{r}
+wilaya_pickup <- "Alger"
+ds <- dbConnect(
+  bigrquery::bigquery(),
+  project = "yassir-data-project",
+  dataset = "YassirGo_Wahab",
+  billing = "yassir-data-project",
+  page_size = 5000
+)
+
+
+
+loyalty_raw_data <- sql <- paste0("SELECT 
+   nb_trip,
+  dist_trips_KM,
+  time_trips_Minutes,
+  ttl_estimated_cost,
+  ttl_revenue,
+  ttl_Spend,
+  original_cost,
+  rider,
+  pickup_WL,
+  destination_Wl,
+  Month_Trip,
+  Year_Trip,
+  service,
+  service_type
+                                  FROM `yassir-data-project.YassirGo_Wahab.All_view`
+  where pickup_WL IN ('",wilaya_pickup,"')")
+Loyalty_data <- DBI::dbGetQuery(ds, loyalty_raw_data)
+
+saveRDS(Loyalty_data, "Loyalty_data.rds")
+Loyalty_data <- readRDS("Loyalty_data.rds")
+glimpse(Loyalty_data)
+```
+```{r}
+## Data processing
+before <- "trip"
+Loyalty_data <- as.data.frame(Loyalty_data)
+loyalty_trips <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(nb_trip = sum(nb_trip)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,nb_trip)
+############################### Replace_NA with 0
+                               loyalty_trips[is.na(loyalty_trips)]  =0
+## Data processing
+loyalty_trips_norm <- loyalty_trips %>% mutate(norm_trip_2017_10 =  trip_2017_10 *30/31,
+norm_trip_2017_11 =  trip_2017_11,
+norm_trip_2017_12 = trip_2017_12*30/31,
+norm_trip_2017_6  =  trip_2017_6,
+norm_trip_2017_7  = trip_2017_7*30/31,
+norm_trip_2017_8  =trip_2017_8*30/31,
+norm_trip_2017_9  =trip_2017_9,
+norm_trip_2018_1  = trip_2018_1*30/31,
+norm_trip_2018_10 =trip_2018_10*30/31,
+norm_trip_2018_11 = trip_2018_11,
+norm_trip_2018_12 =trip_2018_12*30/31,
+norm_trip_2018_2  =trip_2018_2*30/28,
+norm_trip_2018_3  =trip_2018_3*30/31 , 
+norm_trip_2018_4  =trip_2018_4,
+norm_trip_2018_5  =trip_2018_5*30/31,
+norm_trip_2018_6  =trip_2018_6,
+norm_trip_2018_7  =trip_2018_7*30/31,
+norm_trip_2018_8  =trip_2018_8*30/31,
+norm_trip_2018_9  =trip_2018_9,
+norm_trip_2019_1  =trip_2019_1*30/31,
+norm_trip_2019_10  =trip_2019_10*30/31,
+norm_trip_2019_11  =trip_2019_11,
+norm_trip_2019_12 =trip_2019_12*30/31,
+norm_trip_2019_2  =trip_2019_2*30/28,
+norm_trip_2019_3  =trip_2019_3*30/31,
+norm_trip_2019_4  =trip_2019_4,
+norm_trip_2019_5 =trip_2019_5*30/31,
+norm_trip_2019_6 = trip_2019_6,
+norm_trip_2019_7 =trip_2019_7*30/31,
+norm_trip_2019_8  =trip_2019_8*30/31,
+norm_trip_2019_9  =trip_2019_9,
+norm_trip_2020_1  =trip_2020_1*30/31,
+norm_trip_2020_2  =trip_2020_2*30/29,
+norm_trip_2020_3  =trip_2020_2*30/31,
+norm_trip_2020_4 =trip_2020_4) 
+
+ a<- function()                          
+dim(check_data)
+names(loyalty_trips)
+class(Loyalty_data)
+head(loyalty_trips_norm,10)
+```               
+

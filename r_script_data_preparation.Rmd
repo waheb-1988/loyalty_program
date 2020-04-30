@@ -2,8 +2,22 @@
 title: "Loyalty Program"
 output: html_notebook
 ---
-
+## Loyalty program
+##1.Evolution of #rider with segments.
+##2.Point Value Logic.
+##3.
+1.2017/2018/2019
+nb_rider.
+nb_trips.
+revenue.
+spend.
+time.
+distances
 ```{r}
+gc()
+sessionInfo()
+memory.limit()
+memory.limit(16190+10000)
 library(rfm)
 library(descriptr)
 library(kableExtra)
@@ -53,7 +67,7 @@ library(ggpubr)
 
 ```
 ```{r}
-wilaya_pickup <- "Alger"
+
 ds <- dbConnect(
   bigrquery::bigquery(),
   project = "yassir-data-project",
@@ -73,22 +87,27 @@ loyalty_raw_data <- sql <- paste0("SELECT
   ttl_Spend,
   original_cost,
   rider,
-  pickup_WL,
-  destination_Wl,
   Month_Trip,
-  Year_Trip,
-  service,
-  service_type
-                                  FROM `yassir-data-project.YassirGo_Wahab.All_view`
-  where pickup_WL IN ('",wilaya_pickup,"')")
+  Year_Trip
+ 
+                                  FROM `yassir-data-project.YassirGo_Wahab.All_view`")
 Loyalty_data <- DBI::dbGetQuery(ds, loyalty_raw_data)
 
 saveRDS(Loyalty_data, "Loyalty_data.rds")
 Loyalty_data <- readRDS("Loyalty_data.rds")
 glimpse(Loyalty_data)
 ```
+
+
+
 ```{r}
-## Data processing
+### Segment limits:
+a1 <- 2 # Very Low
+a2 <- 4.5 # low
+a3 <- 8  # Mid
+a4 <- 17.5 #High # Very_High 
+
+## Trip and segmentation:
 before <- "trip"
 Loyalty_data <- as.data.frame(Loyalty_data)
 loyalty_trips <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
@@ -97,49 +116,788 @@ loyalty_trips <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>%
                                arrange(rider,Year_Trip,Month_Trip) %>% 
                                unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
                                spread(year_month,nb_trip)
-############################### Replace_NA with 0
-                               loyalty_trips[is.na(loyalty_trips)]  =0
-## Data processing
-loyalty_trips_norm <- loyalty_trips %>% mutate(norm_trip_2017_10 =  trip_2017_10 *30/31,
-norm_trip_2017_11 =  trip_2017_11,
-norm_trip_2017_12 = trip_2017_12*30/31,
-norm_trip_2017_6  =  trip_2017_6,
-norm_trip_2017_7  = trip_2017_7*30/31,
-norm_trip_2017_8  =trip_2017_8*30/31,
-norm_trip_2017_9  =trip_2017_9,
-norm_trip_2018_1  = trip_2018_1*30/31,
-norm_trip_2018_10 =trip_2018_10*30/31,
-norm_trip_2018_11 = trip_2018_11,
-norm_trip_2018_12 =trip_2018_12*30/31,
-norm_trip_2018_2  =trip_2018_2*30/28,
-norm_trip_2018_3  =trip_2018_3*30/31 , 
-norm_trip_2018_4  =trip_2018_4,
-norm_trip_2018_5  =trip_2018_5*30/31,
-norm_trip_2018_6  =trip_2018_6,
-norm_trip_2018_7  =trip_2018_7*30/31,
-norm_trip_2018_8  =trip_2018_8*30/31,
-norm_trip_2018_9  =trip_2018_9,
-norm_trip_2019_1  =trip_2019_1*30/31,
-norm_trip_2019_10  =trip_2019_10*30/31,
-norm_trip_2019_11  =trip_2019_11,
-norm_trip_2019_12 =trip_2019_12*30/31,
-norm_trip_2019_2  =trip_2019_2*30/28,
-norm_trip_2019_3  =trip_2019_3*30/31,
-norm_trip_2019_4  =trip_2019_4,
-norm_trip_2019_5 =trip_2019_5*30/31,
-norm_trip_2019_6 = trip_2019_6,
-norm_trip_2019_7 =trip_2019_7*30/31,
-norm_trip_2019_8  =trip_2019_8*30/31,
-norm_trip_2019_9  =trip_2019_9,
-norm_trip_2020_1  =trip_2020_1*30/31,
-norm_trip_2020_2  =trip_2020_2*30/29,
-norm_trip_2020_3  =trip_2020_2*30/31,
-norm_trip_2020_4 =trip_2020_4) 
 
- a<- function()                          
-dim(check_data)
-names(loyalty_trips)
-class(Loyalty_data)
-head(loyalty_trips_norm,10)
-```               
+
+############################### 
+                               
+loyalty_trips_norm <- loyalty_trips %>% mutate(norm_trip_2017_10 =  trip_2017_10 *30/31,segment_2017_10 = ifelse( norm_trip_2017_10 <= a1,"Very_Low",ifelse( norm_trip_2017_10 > a1 & norm_trip_2017_10 <= a2,"Low",ifelse( norm_trip_2017_10 > a2 & norm_trip_2017_10 <= a3,"Mid",ifelse( norm_trip_2017_10 > a3 & norm_trip_2017_10 <= a4,"High",ifelse( norm_trip_2017_10 > a4,"Very_High"))))),
+norm_trip_2017_11 =  trip_2017_11,segment_2017_11 = ifelse( norm_trip_2017_11 <= a1,"Very_Low",ifelse( norm_trip_2017_11 > a1 & norm_trip_2017_11 <= a2,"Low",ifelse( norm_trip_2017_11 > a2 & norm_trip_2017_11 <= a3,"Mid",ifelse( norm_trip_2017_11 > a3 & norm_trip_2017_11 <= a4,"High",ifelse( norm_trip_2017_11 > a4,"Very_High"))))),
+norm_trip_2017_12 = trip_2017_12*30/31,segment_2017_12 = ifelse( norm_trip_2017_12 <= a1,"Very_Low",ifelse( norm_trip_2017_12 > a1 & norm_trip_2017_12 <= a2,"Low",ifelse( norm_trip_2017_12 > a2 & norm_trip_2017_12 <= a3,"Mid",ifelse( norm_trip_2017_12 > a3 & norm_trip_2017_12 <= a4,"High",ifelse( norm_trip_2017_12 > a4,"Very_High"))))),
+norm_trip_2017_6  =  trip_2017_6,segment_2017_6 = ifelse( norm_trip_2017_6 <= a1,"Very_Low",ifelse( norm_trip_2017_6 > a1 & norm_trip_2017_6 <= a2,"Low",ifelse( norm_trip_2017_6 > a2 & norm_trip_2017_6 <= a3,"Mid",ifelse( norm_trip_2017_6 > a3 & norm_trip_2017_6 <= a4,"High",ifelse( norm_trip_2017_6 > a4,"Very_High"))))),
+norm_trip_2017_7  = trip_2017_7*30/31,segment_2017_7 = ifelse( norm_trip_2017_7 <= a1,"Very_Low",ifelse( norm_trip_2017_7 > a1 & norm_trip_2017_7 <= a2,"Low",ifelse( norm_trip_2017_7 > a2 & norm_trip_2017_7 <= a3,"Mid",ifelse( norm_trip_2017_7 > a3 & norm_trip_2017_7 <= a4,"High",ifelse( norm_trip_2017_7 > a4,"Very_High"))))),
+norm_trip_2017_8  =trip_2017_8*30/31,segment_2017_8 = ifelse( norm_trip_2017_8 <= a1,"Very_Low",ifelse( norm_trip_2017_8 > a1 & norm_trip_2017_8 <= a2,"Low",ifelse( norm_trip_2017_8 > a2 & norm_trip_2017_8 <= a3,"Mid",ifelse( norm_trip_2017_8 > a3 & norm_trip_2017_8 <= a4,"High",ifelse( norm_trip_2017_8 > a4,"Very_High"))))),
+norm_trip_2017_9  =trip_2017_9,segment_2017_9 = ifelse( norm_trip_2017_9 <= a1,"Very_Low",ifelse( norm_trip_2017_9 > a1 & norm_trip_2017_9 <= a2,"Low",ifelse( norm_trip_2017_9 > a2 & norm_trip_2017_9 <= a3,"Mid",ifelse( norm_trip_2017_9 > a3 & norm_trip_2017_9 <= a4,"High",ifelse( norm_trip_2017_9 > a4,"Very_High"))))),
+norm_trip_2018_1  = trip_2018_1*30/31,segment_2018_1 = ifelse( norm_trip_2018_1 <= a1,"Very_Low",ifelse( norm_trip_2018_1 > a1 & norm_trip_2018_1 <= a2,"Low",ifelse( norm_trip_2018_1 > a2 & norm_trip_2018_1 <= a3,"Mid",ifelse( norm_trip_2018_1 > a3 & norm_trip_2018_1 <= a4,"High",ifelse( norm_trip_2018_1 > a4,"Very_High"))))),
+norm_trip_2018_10 =trip_2018_10*30/31,segment_2018_10 = ifelse( norm_trip_2018_10 <= a1,"Very_Low",ifelse( norm_trip_2018_10 > a1 & norm_trip_2018_10 <= a2,"Low",ifelse( norm_trip_2018_10 > a2 & norm_trip_2018_10 <= a3,"Mid",ifelse( norm_trip_2018_10 > a3 & norm_trip_2018_10 <= a4,"High",ifelse( norm_trip_2018_10 > a4,"Very_High"))))),
+norm_trip_2018_11 = trip_2018_11,segment_2018_11 = ifelse( norm_trip_2018_11 <= a1,"Very_Low",ifelse( norm_trip_2018_11 > a1 & norm_trip_2018_11 <= a2,"Low",ifelse( norm_trip_2018_11 > a2 & norm_trip_2018_11 <= a3,"Mid",ifelse( norm_trip_2018_11 > a3 & norm_trip_2018_11 <= a4,"High",ifelse( norm_trip_2018_11 > a4,"Very_High"))))),
+norm_trip_2018_12 =trip_2018_12*30/31,segment_2018_12 = ifelse( norm_trip_2018_12 <= a1,"Very_Low",ifelse( norm_trip_2018_12 > a1 & norm_trip_2018_12 <= a2,"Low",ifelse( norm_trip_2018_12 > a2 & norm_trip_2018_12 <= a3,"Mid",ifelse( norm_trip_2018_12 > a3 & norm_trip_2018_12 <= a4,"High",ifelse( norm_trip_2018_12 > a4,"Very_High"))))),
+norm_trip_2018_2  =trip_2018_2*30/28,segment_2018_2 = ifelse( norm_trip_2018_2 <= a1,"Very_Low",ifelse( norm_trip_2018_2 > a1 & norm_trip_2018_2 <= a2,"Low",ifelse( norm_trip_2018_2 > a2 & norm_trip_2018_2 <= a3,"Mid",ifelse( norm_trip_2018_2 > a3 & norm_trip_2018_2 <= a4,"High",ifelse( norm_trip_2018_2 > a4,"Very_High"))))),
+norm_trip_2018_3  =trip_2018_3*30/31 ,segment_2018_3 = ifelse( norm_trip_2018_3 <= a1,"Very_Low",ifelse( norm_trip_2018_3 > a1 & norm_trip_2018_3 <= a2,"Low",ifelse( norm_trip_2018_3 > a2 & norm_trip_2018_3 <= a3,"Mid",ifelse( norm_trip_2018_3 > a3 & norm_trip_2018_3 <= a4,"High",ifelse( norm_trip_2018_3 > a4,"Very_High"))))), 
+norm_trip_2018_4  =trip_2018_4,segment_2018_4 = ifelse( norm_trip_2018_4 <= a1,"Very_Low",ifelse( norm_trip_2018_4 > a1 & norm_trip_2018_4 <= a2,"Low",ifelse( norm_trip_2018_4 > a2 & norm_trip_2018_4 <= a3,"Mid",ifelse( norm_trip_2018_4 > a3 & norm_trip_2018_4 <= a4,"High",ifelse( norm_trip_2018_4 > a4,"Very_High"))))),
+norm_trip_2018_5  =trip_2018_5*30/31,segment_2018_5= ifelse( norm_trip_2018_5 <= a1,"Very_Low",ifelse( norm_trip_2018_5 > a1 & norm_trip_2018_5 <= a2,"Low",ifelse( norm_trip_2018_5 > a2 & norm_trip_2018_5 <= a3,"Mid",ifelse( norm_trip_2018_5 > a3 & norm_trip_2018_5 <= a4,"High",ifelse( norm_trip_2018_5 > a4,"Very_High"))))),
+norm_trip_2018_6  =trip_2018_6,segment_2018_6= ifelse( norm_trip_2018_6 <= a1,"Very_Low",ifelse( norm_trip_2018_6 > a1 & norm_trip_2018_6 <= a2,"Low",ifelse( norm_trip_2018_6 > a2 & norm_trip_2018_6 <= a3,"Mid",ifelse( norm_trip_2018_6 > a3 & norm_trip_2018_6 <= a4,"High",ifelse( norm_trip_2018_6 > a4,"Very_High"))))),
+norm_trip_2018_7  =trip_2018_7*30/31,segment_2018_7= ifelse( norm_trip_2018_7 <= a1,"Very_Low",ifelse( norm_trip_2018_7 > a1 & norm_trip_2018_7 <= a2,"Low",ifelse( norm_trip_2018_7 > a2 & norm_trip_2018_7 <= a3,"Mid",ifelse( norm_trip_2018_7 > a3 & norm_trip_2018_7 <= a4,"High",ifelse( norm_trip_2018_7 > a4,"Very_High"))))),
+norm_trip_2018_8  =trip_2018_8*30/31,segment_2018_8= ifelse( norm_trip_2018_8 <= a1,"Very_Low",ifelse( norm_trip_2018_8 > a1 & norm_trip_2018_8 <= a2,"Low",ifelse( norm_trip_2018_8 > a2 & norm_trip_2018_8 <= a3,"Mid",ifelse( norm_trip_2018_8 > a3 & norm_trip_2018_8 <= a4,"High",ifelse( norm_trip_2018_8 > a4,"Very_High"))))),
+norm_trip_2018_9  =trip_2018_9,segment_2018_9= ifelse( norm_trip_2018_9 <= a1,"Very_Low",ifelse( norm_trip_2018_9 > a1 & norm_trip_2018_9 <= a2,"Low",ifelse( norm_trip_2018_9 > a2 & norm_trip_2018_9 <= a3,"Mid",ifelse( norm_trip_2018_9 > a3 & norm_trip_2018_9 <= a4,"High",ifelse( norm_trip_2018_9 > a4,"Very_High"))))),
+norm_trip_2019_1  =trip_2019_1*30/31,segment_2019_1= ifelse( norm_trip_2019_1 <= a1,"Very_Low",ifelse( norm_trip_2019_1 > a1 & norm_trip_2019_1 <= a2,"Low",ifelse( norm_trip_2019_1 > a2 & norm_trip_2019_1 <= a3,"Mid",ifelse( norm_trip_2019_1 > a3 & norm_trip_2019_1 <= a4,"High",ifelse( norm_trip_2019_1 > a4,"Very_High"))))),
+norm_trip_2019_10  =trip_2019_10*30/31,segment_2019_10= ifelse( norm_trip_2019_10 <= a1,"Very_Low",ifelse( norm_trip_2019_10 > a1 & norm_trip_2019_10 <= a2,"Low",ifelse( norm_trip_2019_10 > a2 & norm_trip_2019_10 <= a3,"Mid",ifelse( norm_trip_2019_10 > a3 & norm_trip_2019_10 <= a4,"High",ifelse( norm_trip_2019_10 > a4,"Very_High"))))),
+norm_trip_2019_11  =trip_2019_11,segment_2019_11= ifelse( norm_trip_2019_11 <= a1,"Very_Low",ifelse( norm_trip_2019_11 > a1 & norm_trip_2019_11 <= a2,"Low",ifelse( norm_trip_2019_11 > a2 & norm_trip_2019_11 <= a3,"Mid",ifelse( norm_trip_2019_11 > a3 & norm_trip_2019_11 <= a4,"High",ifelse( norm_trip_2019_11 > a4,"Very_High"))))),
+norm_trip_2019_12 =trip_2019_12*30/31,segment_2019_12= ifelse( norm_trip_2019_12 <= a1,"Very_Low",ifelse( norm_trip_2019_12 > a1 & norm_trip_2019_12 <= a2,"Low",ifelse( norm_trip_2019_12 > a2 & norm_trip_2019_12 <= a3,"Mid",ifelse( norm_trip_2019_12 > a3 & norm_trip_2019_12 <= a4,"High",ifelse( norm_trip_2019_12 > a4,"Very_High"))))),
+norm_trip_2019_2  =trip_2019_2*30/28,segment_2019_2= ifelse( norm_trip_2019_2 <= a1,"Very_Low",ifelse( norm_trip_2019_2 > a1 & norm_trip_2019_2 <= a2,"Low",ifelse( norm_trip_2019_2 > a2 & norm_trip_2019_2 <= a3,"Mid",ifelse( norm_trip_2019_2 > a3 & norm_trip_2019_2 <= a4,"High",ifelse( norm_trip_2019_2 > a4,"Very_High"))))),
+norm_trip_2019_3  =trip_2019_3*30/31,segment_2019_3= ifelse( norm_trip_2019_3 <= a1,"Very_Low",ifelse( norm_trip_2019_3 > a1 & norm_trip_2019_3 <= a2,"Low",ifelse( norm_trip_2019_3 > a2 & norm_trip_2019_3 <= a3,"Mid",ifelse( norm_trip_2019_3 > a3 & norm_trip_2019_3 <= a4,"High",ifelse( norm_trip_2019_3 > a4,"Very_High"))))),
+norm_trip_2019_4  =trip_2019_4,segment_2019_4= ifelse( norm_trip_2019_4 <= a1,"Very_Low",ifelse( norm_trip_2019_4 > a1 & norm_trip_2019_4 <= a2,"Low",ifelse( norm_trip_2019_4 > a2 & norm_trip_2019_4 <= a3,"Mid",ifelse( norm_trip_2019_4 > a3 & norm_trip_2019_4 <= a4,"High",ifelse( norm_trip_2019_4 > a4,"Very_High"))))),
+norm_trip_2019_5  =trip_2019_5*30/31,segment_2019_5= ifelse( norm_trip_2019_5 <= a1,"Very_Low",ifelse( norm_trip_2019_5 > a1 & norm_trip_2019_5 <= a2,"Low",ifelse( norm_trip_2019_5 > a2 & norm_trip_2019_5 <= a3,"Mid",ifelse( norm_trip_2019_5 > a3 & norm_trip_2019_5 <= a4,"High",ifelse( norm_trip_2019_5 > a4,"Very_High"))))),
+norm_trip_2019_6  = trip_2019_6,segment_2019_6= ifelse( norm_trip_2019_6 <= a1,"Very_Low",ifelse( norm_trip_2019_6 > a1 & norm_trip_2019_6 <= a2,"Low",ifelse( norm_trip_2019_6 > a2 & norm_trip_2019_6 <= a3,"Mid",ifelse( norm_trip_2019_6 > a3 & norm_trip_2019_6 <= a4,"High",ifelse( norm_trip_2019_6 > a4,"Very_High"))))),
+norm_trip_2019_7  = trip_2019_7*30/31,segment_2019_7= ifelse( norm_trip_2019_7 <= a1,"Very_Low",ifelse( norm_trip_2019_7 > a1 & norm_trip_2019_7 <= a2,"Low",ifelse( norm_trip_2019_7 > a2 & norm_trip_2019_7 <= a3,"Mid",ifelse( norm_trip_2019_7 > a3 & norm_trip_2019_7 <= a4,"High",ifelse( norm_trip_2019_7 > a4,"Very_High"))))),
+norm_trip_2019_8  =trip_2019_8*30/31,segment_2019_8= ifelse( norm_trip_2019_8 <= a1,"Very_Low",ifelse( norm_trip_2019_8 > a1 & norm_trip_2019_8 <= a2,"Low",ifelse( norm_trip_2019_8 > a2 & norm_trip_2019_8 <= a3,"Mid",ifelse( norm_trip_2019_8 > a3 & norm_trip_2019_8 <= a4,"High",ifelse( norm_trip_2019_8 > a4,"Very_High"))))),
+norm_trip_2019_9  =trip_2019_9,segment_2019_9= ifelse( norm_trip_2019_9 <= a1,"Very_Low",ifelse( norm_trip_2019_9 > a1 & norm_trip_2019_9 <= a2,"Low",ifelse( norm_trip_2019_9 > a2 & norm_trip_2019_9 <= a3,"Mid",ifelse( norm_trip_2019_9 > a3 & norm_trip_2019_9 <= a4,"High",ifelse( norm_trip_2019_9 > a4,"Very_High"))))),
+norm_trip_2020_1  =trip_2020_1*30/31,segment_2020_1= ifelse( norm_trip_2020_1 <= a1,"Very_Low",ifelse( norm_trip_2020_1 > a1 & norm_trip_2020_1 <= a2,"Low",ifelse( norm_trip_2020_1 > a2 & norm_trip_2020_1 <= a3,"Mid",ifelse( norm_trip_2020_1 > a3 & norm_trip_2020_1 <= a4,"High",ifelse( norm_trip_2020_1 > a4,"Very_High"))))),
+norm_trip_2020_2  =trip_2020_2*30/29,segment_2020_2= ifelse( norm_trip_2020_2 <= a1,"Very_Low",ifelse( norm_trip_2020_2 > a1 & norm_trip_2020_2 <= a2,"Low",ifelse( norm_trip_2020_2 > a2 & norm_trip_2020_2 <= a3,"Mid",ifelse( norm_trip_2020_2 > a3 & norm_trip_2020_2 <= a4,"High",ifelse( norm_trip_2020_2 > a4,"Very_High"))))),
+norm_trip_2020_3  =trip_2020_3*30/31,segment_2020_3= ifelse( norm_trip_2020_3 <= a1,"Very_Low",ifelse( norm_trip_2020_3 > a1 & norm_trip_2020_3 <= a2,"Low",ifelse( norm_trip_2020_3 > a2 & norm_trip_2020_3 <= a3,"Mid",ifelse( norm_trip_2020_3 > a3 & norm_trip_2020_3 <= a4,"High",ifelse( norm_trip_2020_3 > a4,"Very_High"))))),
+norm_trip_2020_4 =trip_2020_4,segment_2020_4= ifelse( norm_trip_2020_4 <= a1,"Very_Low",ifelse( norm_trip_2020_4 > a1 & norm_trip_2020_4 <= a2,"Low",ifelse( norm_trip_2020_4 > a2 & norm_trip_2020_4 <= a3,"Mid",ifelse( norm_trip_2020_4 > a3 & norm_trip_2020_4 <= a4,"High",ifelse( norm_trip_2020_4 > a4,"Very_High")))))) 
+
+loyalty_trips_norm <- as.data.frame(loyalty_trips_norm)
+loyalty_trips_norm[is.na(loyalty_trips_norm)]  =0
+
+
+## spend:
+before <- "spend"
+
+loyalty_spend <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(spend = sum(original_cost)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,spend)
+############################### Replace_NA with 0
+                               loyalty_spend[is.na(loyalty_spend)]  =0
+
+## revenue:
+before <- "revenue"
+
+loyalty_revenue <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(revenue = sum(ttl_revenue)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,revenue)
+############################### Replace_NA with 0
+                               loyalty_revenue[is.na(loyalty_revenue)]  =0
+## distance:                               
+before <- "dis"
+
+loyalty_distance <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(distance = sum(dist_trips_KM)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,distance)
+############################### Replace_NA with 0
+                               loyalty_distance[is.na(loyalty_distance)]  =0
+## time:                               
+before <- "time"
+
+loyalty_time <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(time = sum(time_trips_Minutes)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,time)
+############################### Replace_NA with 0
+                               loyalty_time[is.na(loyalty_time)]  =0 
+###
+loyalty_trips_norm_1 <- loyalty_trips_norm %>% dplyr::select (rider, segment_2017_6  ,segment_2017_7  ,segment_2017_8 ,segment_2017_9 ,segment_2017_10, segment_2017_11, segment_2017_12 ,segment_2018_1  ,segment_2018_2  ,segment_2018_3   ,segment_2018_4  ,segment_2018_5  ,segment_2018_6  ,segment_2018_7  ,segment_2018_8 ,segment_2018_9 ,segment_2018_10 ,segment_2018_11  ,segment_2018_12,segment_2019_1   ,segment_2019_2 ,segment_2019_3  ,segment_2019_4  ,segment_2019_5 ,segment_2019_6 ,segment_2019_7 ,segment_2019_8  ,segment_2019_9  ,segment_2019_10  ,segment_2019_11  ,segment_2019_12,segment_2020_1  ,segment_2020_2  ,segment_2020_3  ,segment_2020_4 ) %>% gather(segment_year_month,segment,2:36) 
+
+
+####
+loyalty_trips_norm <- as.data.frame(loyalty_trips_norm)
+loyalty_spend <- as.data.frame(loyalty_spend)
+loyalty_revenue <- as.data.frame(loyalty_revenue)
+loyalty_distance <- as.data.frame(loyalty_distance)
+loyalty_time <- as.data.frame(loyalty_time)
+####
+Loyalty <- loyalty_trips_norm %>% left_join(loyalty_spend,by="rider")  %>% left_join(loyalty_revenue,by="rider")  %>%left_join(loyalty_distance,by="rider") %>% left_join(loyalty_time,by="rider")
+
+####
+s<- "segment"
+data_analysis <- Loyalty_data %>% group_by(rider,Year_Trip,Month_Trip) %>%summarise(time = sum(time_trips_Minutes),distance = sum(dist_trips_KM),revenue = sum(ttl_revenue),spend = sum(ttl_estimated_cost),nb_trip = sum(nb_trip)) %>% arrange(rider,Year_Trip,Month_Trip) %>% mutate (trip = s) %>%unite("segment_year_month",trip,Year_Trip,Month_Trip,sep="_") 
+
+
+data_analysis1 <- loyalty_trips_norm_1 %>% dplyr::select (rider,segment,segment_year_month ) %>% arrange(rider,segment,segment_year_month)
+data_analysis11 <- data_analysis %>% left_join(data_analysis1,by=c("rider","segment_year_month")) 
+data_analysis2 <- data_analysis %>% left_join(data_analysis1,by=c("rider","segment_year_month")) %>%
+ group_by(segment_year_month,segment) %>% summarise( nb_rider = n_distinct(rider),time = sum(time),distance = sum(distance),revenue = sum(revenue),spend = sum(spend),nb_trip = sum(nb_trip))
+
+
+write.csv(data_analysis2,"E:/Git_RStudio_Project/loyalty_program/data_analysis2_V.csv")
+### Plot Trying
+data_analysis3 <- data_analysis %>% left_join(data_analysis1,by=c("rider","segment_year_month")) %>% mutate(segment=fct_relevel(segment,c("Very_Low","Low","Mid","High","Very_High")))%>%
+ group_by(segment_year_month,segment) %>% summarise( nb_rider = n_distinct(rider),time = sum(time),distance = sum(distance),revenue = sum(revenue),spend = sum(spend),nb_trip = sum(nb_trip)) %>% mutate (pct = str_c(round(nb_rider/sum(nb_rider)*100, 2), " %")) %>% filter(segment_year_month %in% c("segment_2019_1"   ,"segment_2019_2" ,"segment_2019_3"  ,"segment_2019_4"  ,"segment_2019_5" ,"segment_2019_6" ,"segment_2019_7" ,"segment_2019_8"  ,"segment_2019_9"  ,"segment_2019_10"  ,"segment_2019_11"  ,"segment_2019_12"), !is.na(segment))%>% ggplot(aes(x = segment_year_month, fill = segment, weight = nb_rider )) +geom_bar(position = "fill")+ 
+ggtitle("Monthly Rider Segment on 2019 (%)") 
+
+### Muovement
+ activity_201912 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_12") %>%  mutate(segment_201912=segment) %>% dplyr ::select (rider ,segment_201912)
+ activity_202001 <- data_analysis11 %>% filter(segment_year_month=="segment_2020_1") %>% mutate(segment_202001=segment) %>% dplyr ::select (rider ,segment_202001) 
+ 
+ activity_202002 <- data_analysis11 %>% filter(segment_year_month=="segment_2020_2") %>% mutate(segment_202002=segment)  %>% dplyr ::select (rider ,segment_202002)
+
+ mouvement_analysis <- activity_201912 %>% full_join(activity_202001,by="rider")%>%    full_join(activity_202002,by="rider") %>% group_by(segment_201912,segment_202001,segment_202002) %>%
+                                         summarise(nb_rider=n())
+write.csv(mouvement_analysis,"E:/Git_RStudio_Project/loyalty_program/mouvement_analysis.csv")
+### 2019 Movement
+activity_201901 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_1") %>%  mutate(segment_201901=segment) %>% dplyr ::select (rider ,segment_201901)
+activity_201902 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_2") %>%  mutate(segment_201902=segment) %>% dplyr ::select (rider ,segment_201902)
+activity_201903 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_3") %>%  mutate(segment_201903=segment) %>% dplyr ::select (rider ,segment_201903)
+activity_201904 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_4") %>%  mutate(segment_201904=segment) %>% dplyr ::select (rider ,segment_201904)
+activity_201905 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_5") %>%  mutate(segment_201905=segment) %>% dplyr ::select (rider ,segment_201905)
+activity_201906 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_6") %>%  mutate(segment_201906=segment) %>% dplyr ::select (rider ,segment_201906)
+activity_201907 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_7") %>%  mutate(segment_201907=segment) %>% dplyr ::select (rider ,segment_201907)
+activity_201908 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_8") %>%  mutate(segment_201908=segment) %>% dplyr ::select (rider ,segment_201908)
+activity_201909 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_9") %>%  mutate(segment_201909=segment) %>% dplyr ::select (rider ,segment_201909)
+activity_201910 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_10") %>%  mutate(segment_201910=segment) %>% dplyr ::select (rider ,segment_201910)
+activity_201911 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_11") %>%  mutate(segment_201911=segment) %>% dplyr ::select (rider ,segment_201911)
+activity_201912 <- data_analysis11 %>%filter(segment_year_month=="segment_2019_12") %>%  mutate(segment_201912=segment) %>% dplyr ::select (rider ,segment_201912)
+ 
+ mouvement_analysis1 <- activity_201901 %>% full_join(activity_201902,by="rider")%>%    full_join(activity_201903,by="rider") %>%
+full_join(activity_201904,by="rider") %>%
+full_join(activity_201905,by="rider") %>%
+full_join(activity_201906,by="rider") %>%
+full_join(activity_201907,by="rider") %>%
+full_join(activity_201908,by="rider") %>%
+full_join(activity_201909,by="rider") %>%
+full_join(activity_201910,by="rider") %>%
+full_join(activity_201911,by="rider") %>%
+full_join(activity_201912,by="rider")  %>% group_by(segment_201901,segment_201902,segment_201903,segment_201904,segment_201905,segment_201906,segment_201907,segment_201908,segment_201909,segment_201910,segment_201911,segment_201912) %>%
+                                         
+mouvement_analysis1
+write.csv(mouvement_analysis1,"E:/Git_RStudio_Project/loyalty_program/mouvement_analysis1.csv")
+```
+########"Segmentation Value
+```{r}
+### Segment limits:
+a1 <- 940
+ # Very Low
+a2 <- 1768
+ # low
+a3 <- 3000  # Mid
+a4 <- 7803 #High # Very_High 
+
+## Trip and segmentation:
+before <- "spend"
+Loyalty_data <- as.data.frame(Loyalty_data)
+loyalty_spend <- Loyalty_data %>%
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               mutate(segment = ifelse( original_cost <= a1,"Very_Low",ifelse( original_cost > a1 & original_cost <= a2,"Low",ifelse( original_cost > a2 & original_cost <= a3,"Mid",ifelse( original_cost > a3 & original_cost <= a4,"High",ifelse( original_cost > a4,"Very_High",NA)))))) %>% group_by (segment,year_month) %>%
+                         summarise( nb_rider = n_distinct(rider),time = sum(time_trips_Minutes),distance = sum(dist_trips_KM),revenue = sum(ttl_revenue),ttl_estimated_cost= sum(ttl_estimated_cost),original_cost = sum(original_cost),nb_trip = sum(nb_trip))
+
+write.csv(loyalty_spend,"E:/Git_RStudio_Project/loyalty_program/loyalty_spend.csv")
+
+
+
+### Muovement
+loyalty_spend2 <- Loyalty_data %>%
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               mutate(segment = ifelse( original_cost <= a1,"Very_Low",ifelse( original_cost > a1 & original_cost <= a2,"Low",ifelse( original_cost > a2 & original_cost <= a3,"Mid",ifelse( original_cost > a3 & original_cost <= a4,"High",ifelse( original_cost > a4,"Very_High",NA))))))
+
+ 
+### 2019 Movement
+activity_201901 <- loyalty_spend2 %>%filter(year_month=="spend_2019_1") %>%  mutate(segment_201901=segment) %>% dplyr ::select (rider ,segment_201901)
+activity_201902 <- loyalty_spend2 %>%filter(year_month=="spend_2019_2") %>%  mutate(segment_201902=segment) %>% dplyr ::select (rider ,segment_201902)
+activity_201903 <- loyalty_spend2 %>%filter(year_month=="spend_2019_3") %>%  mutate(segment_201903=segment) %>% dplyr ::select (rider ,segment_201903)
+activity_201904 <- loyalty_spend2 %>%filter(year_month=="spend_2019_4") %>%  mutate(segment_201904=segment) %>% dplyr ::select (rider ,segment_201904)
+activity_201905 <- loyalty_spend2 %>%filter(year_month=="spend_2019_5") %>%  mutate(segment_201905=segment) %>% dplyr ::select (rider ,segment_201905)
+activity_201906 <- loyalty_spend2 %>%filter(year_month=="spend_2019_6") %>%  mutate(segment_201906=segment) %>% dplyr ::select (rider ,segment_201906)
+activity_201907 <- loyalty_spend2 %>%filter(year_month=="spend_2019_7") %>%  mutate(segment_201907=segment) %>% dplyr ::select (rider ,segment_201907)
+activity_201908 <- loyalty_spend2 %>%filter(year_month=="spend_2019_8") %>%  mutate(segment_201908=segment) %>% dplyr ::select (rider ,segment_201908)
+activity_201909 <- loyalty_spend2 %>%filter(year_month=="spend_2019_9") %>%  mutate(segment_201909=segment) %>% dplyr ::select (rider ,segment_201909)
+activity_201910 <- loyalty_spend2 %>%filter(year_month=="spend_2019_10") %>%  mutate(segment_201910=segment) %>% dplyr ::select (rider ,segment_201910)
+activity_201911 <- loyalty_spend2 %>%filter(year_month=="spend_2019_11") %>%  mutate(segment_201911=segment) %>% dplyr ::select (rider ,segment_201911)
+activity_201912 <- loyalty_spend2 %>%filter(year_month=="spend_2019_12") %>%  mutate(segment_201912=segment) %>% dplyr ::select (rider ,segment_201912)
+
+ mouvement_2019_last <- activity_201901 %>% full_join(activity_201902,by="rider")%>%    full_join(activity_201903,by="rider") %>%
+full_join(activity_201904,by="rider") %>%
+full_join(activity_201905,by="rider") %>%
+full_join(activity_201906,by="rider") %>%
+full_join(activity_201907,by="rider") %>%
+full_join(activity_201908,by="rider") %>%
+full_join(activity_201909,by="rider") %>%
+full_join(activity_201910,by="rider") %>%
+full_join(activity_201911,by="rider") %>%
+full_join(activity_201912,by="rider")  %>% group_by(segment_201901,segment_201902,segment_201903,segment_201904,segment_201905,segment_201906,segment_201907,segment_201908,segment_201909,segment_201910,segment_201911,segment_201912) %>%
+                                         summarise(nb_rider=n())
+
+write.csv(mouvement_2019_last,"E:/Git_RStudio_Project/loyalty_program/mouvement_2019_last.csv")
+```
+```{r}
+####### WaterFall script
+
+water_fall <- Loyalty %>% dplyr::select (rider,trip_2017_6  ,trip_2017_7  ,trip_2017_8 ,trip_2017_9 ,trip_2017_10, trip_2017_11, trip_2017_12 ,trip_2018_1  ,trip_2018_2  ,trip_2018_3   ,trip_2018_4  ,trip_2018_5  ,trip_2018_6  ,trip_2018_7  ,trip_2018_8 ,trip_2018_9 ,trip_2018_10 ,trip_2018_11  ,trip_2018_12,trip_2019_1   ,trip_2019_2 ,trip_2019_3  ,trip_2019_4  ,trip_2019_5 ,trip_2019_6 ,trip_2019_7 ,trip_2019_8  ,trip_2019_9  ,trip_2019_10  ,trip_2019_11  ,trip_2019_12,trip_2020_1  ,trip_2020_2  ,trip_2020_3  ,trip_2020_4 ) %>% gather(year_month,nb_monthly_tris,2:36) 
+
+
+water_fall_1 <- Loyalty %>% dplyr::select (rider, segment_2017_6  ,segment_2017_7  ,segment_2017_8 ,segment_2017_9 ,segment_2017_10, segment_2017_11, segment_2017_12 ,segment_2018_1  ,segment_2018_2  ,segment_2018_3   ,segment_2018_4  ,segment_2018_5  ,segment_2018_6  ,segment_2018_7  ,segment_2018_8 ,segment_2018_9 ,segment_2018_10 ,segment_2018_11  ,segment_2018_12,segment_2019_1   ,segment_2019_2 ,segment_2019_3  ,segment_2019_4  ,segment_2019_5 ,segment_2019_6 ,segment_2019_7 ,segment_2019_8  ,segment_2019_9  ,segment_2019_10  ,segment_2019_11  ,segment_2019_12,segment_2020_01  ,segment_2020_02  ,segment_2020_03  ,segment_2020_04 ) %>% gather(segment_year_month,segment,2:36) %>% group_by(segment_year_month,segment) %>% summarise(nb_rider=n_distinct(rider))
+
+### Watter fall plot preparation
+water_fall_1 <- as.data.frame(water_fall_1)
+
+water_fall_2 <- water_fall_1 %>% mutate(x.axis.Var=segment_year_month,cat.Var=segment,values=nb_rider) %>% dplyr ::select(x.axis.Var,cat.Var,values) %>% filter(x.axis.Var %in% c("segment_2017_6"  ,"segment_2017_7"  ,"segment_2017_8" ,"segment_2017_9" ,"segment_2017_10", "segment_2017_11", "segment_2017_12" )) %>% filter(!is.na(cat.Var))
+
+df.tmp <- water_fall_2 %>%
+  # \_Set the factor levels in the order you want ----
+
+  mutate(
+    x.axis.Var = factor(x.axis.Var,
+                        levels = c("segment_2017_6"  ,"segment_2017_7"  ,"segment_2017_8" ,"segment_2017_9" ,"segment_2017_10", "segment_2017_11", "segment_2017_12" )),
+    cat.Var = factor(cat.Var,
+                        levels = c("Very_Low","Low","Mid","High","Very_High"))
+  ) %>%
+  # \_Sort by Group and Category ----
+  arrange(x.axis.Var, desc(cat.Var)) %>%
+  # \_Get the start and end points of the bars ----
+  mutate(end.Bar = cumsum(values),
+         start.Bar = c(0, head(end.Bar, -1))) %>%
+  # \_Add a new Group called 'Total' with total by category ----
+  rbind(
+    water_fall_2 %>%
+      # \___Sum by Categories ----
+      group_by(cat.Var) %>% 
+      summarise(values = sum(values)) %>%
+      # \___Create new Group: 'Total' ----
+      mutate(
+        x.axis.Var = "Total",
+        cat.Var = factor(cat.Var,
+                         levels = c("Very_Low","Low","Mid","High","Very_High"))
+      ) %>%
+      # \___Sort by Group and Category ----
+      arrange(x.axis.Var, desc(cat.Var)) %>%
+      # \___Get the start and end points of the bars ----
+      mutate(end.Bar = cumsum(values),
+             start.Bar = c(0, head(end.Bar, -1))) %>%
+      # \___Put variables in the same order ----
+      dplyr :: select(names(water_fall_2),end.Bar,start.Bar)
+  ) %>%
+  # \_Get numeric index for the groups ----
+  mutate(group.id = group_indices(., x.axis.Var)) %>%
+  # \_Create new variable with total by group ----
+  group_by(x.axis.Var) %>%
+  mutate(total.by.x = sum(values)) %>%
+  # \_Order the columns ----
+  dplyr :: select(x.axis.Var, cat.Var, group.id, start.Bar, values, end.Bar, total.by.x)
+df.tmp  
+ ### Plot
+plot <- ggplot(df.tmp, aes(x = group.id, fill = cat.Var)) + 
+  # \_Simple Waterfall Chart ----
+  geom_rect(aes(x = group.id,
+                xmin = group.id - 0.25, # control bar gap width
+                xmax = group.id + 0.25, 
+                ymin = end.Bar,
+                ymax = start.Bar),
+            color="black", 
+            alpha=0.95) + 
+  # \_Lines Between Bars ----
+  geom_segment(aes(x=ifelse(group.id == last(group.id),
+                            last(group.id),
+                            group.id+0.25), 
+                   xend=ifelse(group.id == last(group.id),
+                               last(group.id),
+                               group.id+0.75), 
+                   y=ifelse(cat.Var == "Very_Low",
+                            end.Bar,
+                            # these will be removed once we set the y limits
+                            max(end.Bar)*2), 
+                   yend=ifelse(cat.Var == "Very_Low",
+                               end.Bar,
+                               # these will be removed once we set the y limits
+                               max(end.Bar)*2)), 
+               colour="black") +
+  # \_Numbers inside bars (each category) ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(values < 150, 
+                       "",
+                       ifelse(nchar(values) == 3,
+                              as.character(values),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(values)
+                              )
+                            )
+                       ),
+        y = rowSums(cbind(start.Bar,values/2))
+        ),
+    color = "white",
+    fontface = "bold"
+    ) + 
+  # \_Total for each category above bars ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(cat.Var != "Very_Low", 
+                       "",
+                       ifelse(nchar(total.by.x) == 3,
+                              as.character(total.by.x),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(total.by.x)
+                                )
+                            )
+                      ),
+        y = end.Bar+200
+      ),
+    color = "#4e4d47",
+    fontface = "bold"
+  ) + 
+  # \_Change colors ----
+  scale_fill_manual(values=c('#c8f464','#ff6969','#55646e','#E69F00', '#56B4E9')) +
+  # \_Change y axis to same scale as original ----
+  scale_y_continuous(
+    expand=c(0,0),
+    limits = c(0, 7000),
+    breaks = seq(0, 7000, 100),
+    labels = ifelse(nchar(seq(0, 7000, 100)) < 4,
+                    as.character(seq(0, 7000, 100)),
+                    sub("(.{1})(.*)", "\\1.\\2", 
+                        as.character(seq(0, 7000, 100))
+                    )
+    )
+  ) +
+  # \_Add tick marks on x axis to look like the original plot ----
+  scale_x_continuous(
+    expand=c(0,0),
+    limits = c(min(df.tmp$group.id)-0.5,max(df.tmp$group.id)+0.5),
+    breaks = c(min(df.tmp$group.id)-0.5,
+               unique(df.tmp$group.id), 
+               unique(df.tmp$group.id) + 0.5
+               ),
+    labels = 
+      c("", 
+        as.character(unique(df.tmp$x.axis.Var)), 
+        rep(c(""), length(unique(df.tmp$x.axis.Var)))
+      )
+  ) +
+  # \_Theme options to make it look like the original plot ----
+  theme(
+    text = element_text(size = 14, color = "#4e4d47"),
+    axis.text = element_text(size = 10, color = "#4e4d47", face = "bold"),
+    axis.text.y = element_text(margin = margin(r = 0.3, unit = "cm")),
+    axis.ticks.x =
+      element_line(color =
+                     c("black",
+                       rep(NA, length(unique(df.tmp$x.axis.Var))),
+                       rep("black", length(unique(df.tmp$x.axis.Var))-1)
+                     )
+                   ),
+    axis.line = element_line(colour = "#4e4d47", size = 0.5),
+    axis.ticks.length = unit(.15, "cm"),
+    axis.title.x =       element_blank(),
+    axis.title.y =       element_blank(),
+    panel.background =   element_blank(),
+    plot.margin =        unit(c(1, 1, 1, 1), "lines"),
+    legend.text =        element_text(size = 10, 
+                                      color = "#4e4d47",
+                                      face = "bold",
+                                      margin = margin(l = 0.25, unit = "cm")
+                                      ),
+    legend.title =       element_blank()
+  )
+plot
+```
+
+```{r}
+### 2018
+before <- "trip"
+
+Loyalty_data_2018 <- Loyalty_data %>% filter(Year_Trip==2018) %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(nb_trip = sum(nb_trip)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,nb_trip)
+Loyalty_data_2018 <- as.data.frame(Loyalty_data_2018)
+class(Loyalty_data_2018)
+####
+loyalty_trips_norm_2018 <- Loyalty_data_2018 %>% mutate(
+norm_trip_2018_1  = trip_2018_1*30/31,segment_2018_1 = ifelse( norm_trip_2018_1 <= a1,"Very_Low",ifelse( norm_trip_2018_1 > a1 & norm_trip_2018_1 <= a2,"Low",ifelse( norm_trip_2018_1 > a2 & norm_trip_2018_1 <= a3,"Mid",ifelse( norm_trip_2018_1 > a3 & norm_trip_2018_1 <= a4,"High",ifelse( norm_trip_2018_1 > a4,"Very_High",NA))))),
+norm_trip_2018_10 =trip_2018_10*30/31,segment_2018_10 = ifelse( norm_trip_2018_10 <= a1,"Very_Low",ifelse( norm_trip_2018_10 > a1 & norm_trip_2018_10 <= a2,"Low",ifelse( norm_trip_2018_10 > a2 & norm_trip_2018_10 <= a3,"Mid",ifelse( norm_trip_2018_10 > a3 & norm_trip_2018_10 <= a4,"High",ifelse( norm_trip_2018_10 > a4,"Very_High",NA))))),
+norm_trip_2018_11 = trip_2018_11,segment_2018_11 = ifelse( norm_trip_2018_11 <= a1,"Very_Low",ifelse( norm_trip_2018_11 > a1 & norm_trip_2018_11 <= a2,"Low",ifelse( norm_trip_2018_11 > a2 & norm_trip_2018_11 <= a3,"Mid",ifelse( norm_trip_2018_11 > a3 & norm_trip_2018_11 <= a4,"High",ifelse( norm_trip_2018_11 > a4,"Very_High",NA))))),
+norm_trip_2018_12 =trip_2018_12*30/31,segment_2018_12 = ifelse( norm_trip_2018_12 <= a1,"Very_Low",ifelse( norm_trip_2018_12 > a1 & norm_trip_2018_12 <= a2,"Low",ifelse( norm_trip_2018_12 > a2 & norm_trip_2018_12 <= a3,"Mid",ifelse( norm_trip_2018_12 > a3 & norm_trip_2018_12 <= a4,"High",ifelse( norm_trip_2018_12 > a4,"Very_High",NA))))),
+norm_trip_2018_2  =trip_2018_2*30/28,segment_2018_2 = ifelse( norm_trip_2018_2 <= a1,"Very_Low",ifelse( norm_trip_2018_2 > a1 & norm_trip_2018_2 <= a2,"Low",ifelse( norm_trip_2018_2 > a2 & norm_trip_2018_2 <= a3,"Mid",ifelse( norm_trip_2018_2 > a3 & norm_trip_2018_2 <= a4,"High",ifelse( norm_trip_2018_2 > a4,"Very_High",NA))))),
+norm_trip_2018_3  =trip_2018_3*30/31 ,segment_2018_3 = ifelse( norm_trip_2018_3 <= a1,"Very_Low",ifelse( norm_trip_2018_3 > a1 & norm_trip_2018_3 <= a2,"Low",ifelse( norm_trip_2018_3 > a2 & norm_trip_2018_3 <= a3,"Mid",ifelse( norm_trip_2018_3 > a3 & norm_trip_2018_3 <= a4,"High",ifelse( norm_trip_2018_3 > a4,"Very_High",NA))))), 
+norm_trip_2018_4  =trip_2018_4,segment_2018_4 = ifelse( norm_trip_2018_4 <= a1,"Very_Low",ifelse( norm_trip_2018_4 > a1 & norm_trip_2018_4 <= a2,"Low",ifelse( norm_trip_2018_4 > a2 & norm_trip_2018_4 <= a3,"Mid",ifelse( norm_trip_2018_4 > a3 & norm_trip_2018_4 <= a4,"High",ifelse( norm_trip_2018_4 > a4,"Very_High",NA))))),
+norm_trip_2018_5  =trip_2018_5*30/31,segment_2018_5= ifelse( norm_trip_2018_5 <= a1,"Very_Low",ifelse( norm_trip_2018_5 > a1 & norm_trip_2018_5 <= a2,"Low",ifelse( norm_trip_2018_5 > a2 & norm_trip_2018_5 <= a3,"Mid",ifelse( norm_trip_2018_5 > a3 & norm_trip_2018_5 <= a4,"High",ifelse( norm_trip_2018_5 > a4,"Very_High",NA))))),
+norm_trip_2018_6  =trip_2018_6,segment_2018_6= ifelse( norm_trip_2018_6 <= a1,"Very_Low",ifelse( norm_trip_2018_6 > a1 & norm_trip_2018_6 <= a2,"Low",ifelse( norm_trip_2018_6 > a2 & norm_trip_2018_6 <= a3,"Mid",ifelse( norm_trip_2018_6 > a3 & norm_trip_2018_6 <= a4,"High",ifelse( norm_trip_2018_6 > a4,"Very_High",NA))))),
+norm_trip_2018_7  =trip_2018_7*30/31,segment_2018_7= ifelse( norm_trip_2018_7 <= a1,"Very_Low",ifelse( norm_trip_2018_7 > a1 & norm_trip_2018_7 <= a2,"Low",ifelse( norm_trip_2018_7 > a2 & norm_trip_2018_7 <= a3,"Mid",ifelse( norm_trip_2018_7 > a3 & norm_trip_2018_7 <= a4,"High",ifelse( norm_trip_2018_7 > a4,"Very_High",NA))))),
+norm_trip_2018_8  =trip_2018_8*30/31, segment_2018_8= ifelse( norm_trip_2018_8 <= a1,"Very_Low",ifelse( norm_trip_2018_8 > a1 & norm_trip_2018_8 <= a2,"Low",ifelse( norm_trip_2018_8 > a2 & norm_trip_2018_8 <= a3,"Mid",ifelse( norm_trip_2018_8 > a3 & norm_trip_2018_8 <= a4,"High",ifelse( norm_trip_2018_8 > a4,"Very_High",NA))))),
+norm_trip_2018_9  =trip_2018_9,segment_2018_9= ifelse( norm_trip_2018_9 <= a1,"Very_Low",ifelse( norm_trip_2018_9 > a1 & norm_trip_2018_9 <= a2,"Low",ifelse( norm_trip_2018_9 > a2 & norm_trip_2018_9 <= a3,"Mid",ifelse( norm_trip_2018_9 > a3 & norm_trip_2018_9 <= a4,"High",ifelse( norm_trip_2018_9 > a4,"Very_High",NA))))))
+
+loyalty_trips_norm_2018 <- as.data.frame(loyalty_trips_norm_2018)
+
+###
+water_fall_2018 <- loyalty_trips_norm_2018 %>% dplyr::select (rider, segment_2018_1  ,segment_2018_2  ,segment_2018_3   ,segment_2018_4  ,segment_2018_5  ,segment_2018_6  ,segment_2018_7  ,segment_2018_8 ,segment_2018_9 ,segment_2018_10 ,segment_2018_11  ,segment_2018_12) %>% gather(segment_year_month,segment,2:13) %>%filter(segment %in% c("High","Very_High")) %>% group_by(segment_year_month,segment) %>% summarise(nb_rider=n_distinct(rider))
+water_fall_2018 <- as.data.frame(water_fall_2018)
+water_fall_2018
+##
+water_fall_3 <- water_fall_2018 %>% mutate(x.axis.Var=segment_year_month,cat.Var=segment,values=nb_rider) %>% dplyr ::select(x.axis.Var,cat.Var,values) %>% filter(x.axis.Var %in% c("segment_2018_1"  ,"segment_2018_2"  ,"segment_2018_3"   ,"segment_2018_4"  ,"segment_2018_5"  ,"segment_2018_6"  ,"segment_2018_7"  ,"segment_2018_8" ,"segment_2018_9" ,"segment_2018_10" ,"segment_2018_11"  ,"segment_2018_12" )) %>% filter(cat.Var %in% c("High","Very_High") )
+
+df.tmp <- water_fall_3 %>%
+  # \_Set the factor levels in the order you want ----
+
+  mutate(
+    x.axis.Var = factor(x.axis.Var,
+                        levels = c("segment_2018_1"  ,"segment_2018_2"  ,"segment_2018_3"   ,"segment_2018_4"  ,"segment_2018_5"  ,"segment_2018_6"  ,"segment_2018_7"  ,"segment_2018_8" ,"segment_2018_9" ,"segment_2018_10" ,"segment_2018_11"  ,"segment_2018_12" )),
+    cat.Var = factor(cat.Var,
+                        levels = c("High","Very_High"))
+  ) %>%
+  # \_Sort by Group and Category ----
+  arrange(x.axis.Var, desc(cat.Var)) %>%
+  # \_Get the start and end points of the bars ----
+  mutate(end.Bar = cumsum(values),
+         start.Bar = c(0, head(end.Bar, -1))) %>%
+  # \_Add a new Group called 'Total' with total by category ----
+  rbind(
+    water_fall_3 %>%
+      # \___Sum by Categories ----
+      group_by(cat.Var) %>% 
+      summarise(values = sum(values)) %>%
+      # \___Create new Group: 'Total' ----
+      mutate(
+        x.axis.Var = "Total",
+        cat.Var = factor(cat.Var,
+                         levels = c("High","Very_High"))
+      ) %>%
+      # \___Sort by Group and Category ----
+      arrange(x.axis.Var, desc(cat.Var)) %>%
+      # \___Get the start and end points of the bars ----
+      mutate(end.Bar = cumsum(values),
+             start.Bar = c(0, head(end.Bar, -1))) %>%
+      # \___Put variables in the same order ----
+      dplyr :: select(names(water_fall_3),end.Bar,start.Bar)
+  ) %>%
+  # \_Get numeric index for the groups ----
+  mutate(group.id = group_indices(., x.axis.Var)) %>%
+  # \_Create new variable with total by group ----
+  group_by(x.axis.Var) %>%
+  mutate(total.by.x = sum(values)) %>%
+  # \_Order the columns ----
+  dplyr :: select(x.axis.Var, cat.Var, group.id, start.Bar, values, end.Bar, total.by.x)
+df.tmp  
+ ### Plot
+plot2 <- ggplot(df.tmp, aes(x = group.id, fill = cat.Var)) + 
+  # \_Simple Waterfall Chart ----
+  geom_rect(aes(x = group.id,
+                xmin = group.id - 0.25, # control bar gap width
+                xmax = group.id + 0.25, 
+                ymin = end.Bar,
+                ymax = start.Bar),
+            color="black", 
+            alpha=0.95) + 
+  # \_Lines Between Bars ----
+  geom_segment(aes(x=ifelse(group.id == last(group.id),
+                            last(group.id),
+                            group.id+0.25), 
+                   xend=ifelse(group.id == last(group.id),
+                               last(group.id),
+                               group.id+0.75), 
+                   y=ifelse(cat.Var == "High",
+                            end.Bar,
+                            # these will be removed once we set the y limits
+                            max(end.Bar)*2), 
+                   yend=ifelse(cat.Var == "High",
+                               end.Bar,
+                               # these will be removed once we set the y limits
+                               max(end.Bar)*2)), 
+               colour="black") +
+  # \_Numbers inside bars (each category) ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(values < 150, 
+                       "",
+                       ifelse(nchar(values) <= 3,
+                              as.character(values),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(values)
+                              )
+                            )
+                       ),
+        y = rowSums(cbind(start.Bar,values/2))
+        ),
+    color = "white",
+    fontface = "bold"
+    ) + 
+  # \_Total for each category above bars ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(cat.Var != "High", 
+                       "",
+                       ifelse(nchar(total.by.x) <= 3,
+                              as.character(total.by.x),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(total.by.x)
+                                )
+                            )
+                      ),
+        y = end.Bar+200
+      ),
+    color = "#4e4d47",
+    fontface = "bold"
+  ) + 
+  # \_Change colors ----
+  scale_fill_manual(values=c('#c8f464','#ff6969')) +
+  # \_Change y axis to same scale as original ----
+  scale_y_continuous(
+    expand=c(0,0),
+    limits = c(0, 50000),
+    breaks = seq(0, 50000, 5000),
+    labels = ifelse(nchar(seq(0, 50000, 5000)) <= 3,
+                    as.character(seq(0, 50000, 5000)),
+                    sub("(.{1})(.*)", "\\1.\\2", 
+                        as.character(seq(0, 50000, 5000))
+                    )
+    )
+  ) +
+  # \_Add tick marks on x axis to look like the original plot ----
+  scale_x_continuous(
+    expand=c(0,0),
+    limits = c(min(df.tmp$group.id)-0.5,max(df.tmp$group.id)+0.5),
+    breaks = c(min(df.tmp$group.id)-0.5,
+               unique(df.tmp$group.id), 
+               unique(df.tmp$group.id) + 0.5
+               ),
+    labels = 
+      c("", 
+        as.character(unique(df.tmp$x.axis.Var)), 
+        rep(c(""), length(unique(df.tmp$x.axis.Var)))
+      )
+  ) +
+  # \_Theme options to make it look like the original plot ----
+  theme(
+    text = element_text(size = 10, color = "#4e4d47"),
+    axis.text = element_text(size = 10, color = "#4e4d47", face = "bold"),
+    axis.text.y = element_text(margin = margin(r = 0.5, unit = "cm")),
+    axis.ticks.x =
+      element_line(color =
+                     c("black",
+                       rep(NA, length(unique(df.tmp$x.axis.Var))),
+                       rep("black", length(unique(df.tmp$x.axis.Var))-1)
+                     )
+                   ),
+    axis.line = element_line(colour = "#4e4d47", size = 0.5),
+    axis.ticks.length = unit(.15, "cm"),
+    axis.title.x =       element_blank(),
+    axis.title.y =       element_blank(),
+    panel.background =   element_blank(),
+    plot.margin =        unit(c(1, 1, 1, 1), "lines"),
+    legend.text =        element_text(size = 10, 
+                                      color = "#4e4d47",
+                                      face = "bold",
+                                      margin = margin(l = 0.25, unit = "cm")
+                                      ),
+    legend.title =       element_blank()
+  )
+plot2
+```
+```{r}
+### 2019
+before <- "trip"
+
+Loyalty_data_2019 <- Loyalty_data %>% filter(Year_Trip==2019) %>% group_by(rider,Year_Trip,Month_Trip) %>% 
+                               summarise(nb_trip = sum(nb_trip)) %>% 
+                               mutate (trip = before) %>%
+                               arrange(rider,Year_Trip,Month_Trip) %>% 
+                               unite("year_month",trip,Year_Trip,Month_Trip,sep="_")%>%
+                               spread(year_month,nb_trip)
+Loyalty_data_2019 <- as.data.frame(Loyalty_data_2019)
+
+####
+loyalty_trips_norm_2019 <- Loyalty_data_2019 %>% mutate(norm_trip_2019_1  =trip_2019_1*30/31,segment_2019_1= ifelse( norm_trip_2019_1 <= a1,"Very_Low",ifelse( norm_trip_2019_1 > a1 & norm_trip_2019_1 <= a2,"Low",ifelse( norm_trip_2019_1 > a2 & norm_trip_2019_1 <= a3,"Mid",ifelse( norm_trip_2019_1 > a3 & norm_trip_2019_1 <= a4,"High",ifelse( norm_trip_2019_1 > a4,"Very_High",NA))))),
+norm_trip_2019_10  =trip_2019_10*30/31,segment_2019_10= ifelse( norm_trip_2019_10 <= a1,"Very_Low",ifelse( norm_trip_2019_10 > a1 & norm_trip_2019_10 <= a2,"Low",ifelse( norm_trip_2019_10 > a2 & norm_trip_2019_10 <= a3,"Mid",ifelse( norm_trip_2019_10 > a3 & norm_trip_2019_10 <= a4,"High",ifelse( norm_trip_2019_10 > a4,"Very_High",NA))))),
+norm_trip_2019_11  =trip_2019_11,segment_2019_11= ifelse( norm_trip_2019_11 <= a1,"Very_Low",ifelse( norm_trip_2019_11 > a1 & norm_trip_2019_11 <= a2,"Low",ifelse( norm_trip_2019_11 > a2 & norm_trip_2019_11 <= a3,"Mid",ifelse( norm_trip_2019_11 > a3 & norm_trip_2019_11 <= a4,"High",ifelse( norm_trip_2019_11 > a4,"Very_High",NA))))),
+norm_trip_2019_12 =trip_2019_12*30/31,segment_2019_12= ifelse( norm_trip_2019_12 <= a1,"Very_Low",ifelse( norm_trip_2019_12 > a1 & norm_trip_2019_12 <= a2,"Low",ifelse( norm_trip_2019_12 > a2 & norm_trip_2019_12 <= a3,"Mid",ifelse( norm_trip_2019_12 > a3 & norm_trip_2019_12 <= a4,"High",ifelse( norm_trip_2019_12 > a4,"Very_High",NA))))),
+norm_trip_2019_2  =trip_2019_2*30/28,segment_2019_2= ifelse( norm_trip_2019_2 <= a1,"Very_Low",ifelse( norm_trip_2019_2 > a1 & norm_trip_2019_2 <= a2,"Low",ifelse( norm_trip_2019_2 > a2 & norm_trip_2019_2 <= a3,"Mid",ifelse( norm_trip_2019_2 > a3 & norm_trip_2019_2 <= a4,"High",ifelse( norm_trip_2019_2 > a4,"Very_High",NA))))),
+norm_trip_2019_3  =trip_2019_3*30/31,segment_2019_3= ifelse( norm_trip_2019_3 <= a1,"Very_Low",ifelse( norm_trip_2019_3 > a1 & norm_trip_2019_3 <= a2,"Low",ifelse( norm_trip_2019_3 > a2 & norm_trip_2019_3 <= a3,"Mid",ifelse( norm_trip_2019_3 > a3 & norm_trip_2019_3 <= a4,"High",ifelse( norm_trip_2019_3 > a4,"Very_High",NA))))),
+norm_trip_2019_4  =trip_2019_4,segment_2019_4= ifelse( norm_trip_2019_4 <= a1,"Very_Low",ifelse( norm_trip_2019_4 > a1 & norm_trip_2019_4 <= a2,"Low",ifelse( norm_trip_2019_4 > a2 & norm_trip_2019_4 <= a3,"Mid",ifelse( norm_trip_2019_4 > a3 & norm_trip_2019_4 <= a4,"High",ifelse( norm_trip_2019_4 > a4,"Very_High",NA))))),
+norm_trip_2019_5  =trip_2019_5*30/31,segment_2019_5= ifelse( norm_trip_2019_5 <= a1,"Very_Low",ifelse( norm_trip_2019_5 > a1 & norm_trip_2019_5 <= a2,"Low",ifelse( norm_trip_2019_5 > a2 & norm_trip_2019_5 <= a3,"Mid",ifelse( norm_trip_2019_5 > a3 & norm_trip_2019_5 <= a4,"High",ifelse( norm_trip_2019_5 > a4,"Very_High",NA))))),
+norm_trip_2019_6  = trip_2019_6,segment_2019_6= ifelse( norm_trip_2019_6 <= a1,"Very_Low",ifelse( norm_trip_2019_6 > a1 & norm_trip_2019_6 <= a2,"Low",ifelse( norm_trip_2019_6 > a2 & norm_trip_2019_6 <= a3,"Mid",ifelse( norm_trip_2019_6 > a3 & norm_trip_2019_6 <= a4,"High",ifelse( norm_trip_2019_6 > a4,"Very_High",NA))))),
+norm_trip_2019_7  = trip_2019_7*30/31,segment_2019_7= ifelse( norm_trip_2019_7 <= a1,"Very_Low",ifelse( norm_trip_2019_7 > a1 & norm_trip_2019_7 <= a2,"Low",ifelse( norm_trip_2019_7 > a2 & norm_trip_2019_7 <= a3,"Mid",ifelse( norm_trip_2019_7 > a3 & norm_trip_2019_7 <= a4,"High",ifelse( norm_trip_2019_7 > a4,"Very_High",NA))))),
+norm_trip_2019_8  =trip_2019_8*30/31,segment_2019_8= ifelse( norm_trip_2019_8 <= a1,"Very_Low",ifelse( norm_trip_2019_8 > a1 & norm_trip_2019_8 <= a2,"Low",ifelse( norm_trip_2019_8 > a2 & norm_trip_2019_8 <= a3,"Mid",ifelse( norm_trip_2019_8 > a3 & norm_trip_2019_8 <= a4,"High",ifelse( norm_trip_2019_8 > a4,"Very_High",NA))))),
+norm_trip_2019_9  =trip_2019_9,segment_2019_9= ifelse( norm_trip_2019_9 <= a1,"Very_Low",ifelse( norm_trip_2019_9 > a1 & norm_trip_2019_9 <= a2,"Low",ifelse( norm_trip_2019_9 > a2 & norm_trip_2019_9 <= a3,"Mid",ifelse( norm_trip_2019_9 > a3 & norm_trip_2019_9 <= a4,"High",ifelse( norm_trip_2019_9 > a4,"Very_High",NA))))))
+
+
+loyalty_trips_norm_2019 <- as.data.frame(loyalty_trips_norm_2019)
+check <- loyalty_trips_norm_2019 %>% group_by(segment_2019_11) %>% summarise(nb=n_distinct(rider),nn=sum(trip_2019_11))
+check
+###
+water_fall_2019 <- loyalty_trips_norm_2019 %>% dplyr::select (rider, segment_2019_1  ,segment_2019_2  ,segment_2019_3   ,segment_2019_4  ,segment_2019_5  ,segment_2019_6  ,segment_2019_7  ,segment_2019_8 ,segment_2019_9 ,segment_2019_10 ,segment_2019_11  ,segment_2019_12) %>% gather(segment_year_month,segment,2:13) %>%filter(segment %in% c("High","Very_High")) %>% group_by(segment_year_month,segment) %>% summarise(nb_rider=n_distinct(rider))
+water_fall_2019 <- as.data.frame(water_fall_2019)
+water_fall_2019
+##
+water_fall_4 <- water_fall_2019 %>% mutate(x.axis.Var=segment_year_month,cat.Var=segment,values=nb_rider) %>% dplyr ::select(x.axis.Var,cat.Var,values) %>% filter(x.axis.Var %in% c("segment_2019_1"   ,"segment_2019_2" ,"segment_2019_3"  ,"segment_2019_4"  ,"segment_2019_5" ,"segment_2019_6" ,"segment_2019_7" ,"segment_2019_8"  ,"segment_2019_9" ,"segment_2019_10"  ,"segment_2019_11"  ,"segment_2019_12" )) %>% filter(cat.Var %in% c("High","Very_High") )
+
+df.tmp <- water_fall_4 %>%
+  # \_Set the factor levels in the order you want ----
+
+  mutate(
+    x.axis.Var = factor(x.axis.Var,
+                        levels = c("segment_2019_1"   ,"segment_2019_2" ,"segment_2019_3"  ,"segment_2019_4"  ,"segment_2019_5" ,"segment_2019_6" ,"segment_2019_7" ,"segment_2019_8"  ,"segment_2019_9" ,"segment_2019_10"  ,"segment_2019_11"  ,"segment_2019_12" )),
+    cat.Var = factor(cat.Var,
+                        levels = c("High","Very_High"))
+  ) %>%
+  # \_Sort by Group and Category ----
+  arrange(x.axis.Var, desc(cat.Var)) %>%
+  # \_Get the start and end points of the bars ----
+  mutate(end.Bar = cumsum(values),
+         start.Bar = c(0, head(end.Bar, -1))) %>%
+  # \_Add a new Group called 'Total' with total by category ----
+  rbind(
+    water_fall_4 %>%
+      # \___Sum by Categories ----
+      group_by(cat.Var) %>% 
+      summarise(values = sum(values)) %>%
+      # \___Create new Group: 'Total' ----
+      mutate(
+        x.axis.Var = "Total",
+        cat.Var = factor(cat.Var,
+                         levels = c("High","Very_High"))
+      ) %>%
+      # \___Sort by Group and Category ----
+      arrange(x.axis.Var, desc(cat.Var)) %>%
+      # \___Get the start and end points of the bars ----
+      mutate(end.Bar = cumsum(values),
+             start.Bar = c(0, head(end.Bar, -1))) %>%
+      # \___Put variables in the same order ----
+      dplyr :: select(names(water_fall_4),end.Bar,start.Bar)
+  ) %>%
+  # \_Get numeric index for the groups ----
+  mutate(group.id = group_indices(., x.axis.Var)) %>%
+  # \_Create new variable with total by group ----
+  group_by(x.axis.Var) %>%
+  mutate(total.by.x = sum(values)) %>%
+  # \_Order the columns ----
+  dplyr :: select(x.axis.Var, cat.Var, group.id, start.Bar, values, end.Bar, total.by.x)
+df.tmp  
+ ### Plot
+plot3 <- ggplot(df.tmp, aes(x = group.id, fill = cat.Var)) + 
+  # \_Simple Waterfall Chart ----
+  geom_rect(aes(x = group.id,
+                xmin = group.id - 0.25, # control bar gap width
+                xmax = group.id + 0.25, 
+                ymin = end.Bar,
+                ymax = start.Bar),
+            color="black", 
+            alpha=0.95) + 
+  # \_Lines Between Bars ----
+  geom_segment(aes(x=ifelse(group.id == last(group.id),
+                            last(group.id),
+                            group.id+0.25), 
+                   xend=ifelse(group.id == last(group.id),
+                               last(group.id),
+                               group.id+0.75), 
+                   y=ifelse(cat.Var == "High",
+                            end.Bar,
+                            # these will be removed once we set the y limits
+                            max(end.Bar)*2), 
+                   yend=ifelse(cat.Var == "High",
+                               end.Bar,
+                               # these will be removed once we set the y limits
+                               max(end.Bar)*2)), 
+               colour="black") +
+  # \_Numbers inside bars (each category) ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(values < 150, 
+                       "",
+                       ifelse(nchar(values) <= 3,
+                              as.character(values),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(values)
+                              )
+                            )
+                       ),
+        y = rowSums(cbind(start.Bar,values/2))
+        ),
+    color = "white",
+    fontface = "bold"
+    ) + 
+  # \_Total for each category above bars ----
+  geom_text(
+    mapping = 
+      aes(
+        label = ifelse(cat.Var != "High", 
+                       "",
+                       ifelse(nchar(total.by.x) <= 3,
+                              as.character(total.by.x),
+                              sub("(.{1})(.*)", "\\1.\\2", 
+                                  as.character(total.by.x)
+                                )
+                            )
+                      ),
+        y = end.Bar+200
+      ),
+    color = "#4e4d47",
+    fontface = "bold"
+  ) + 
+  # \_Change colors ----
+  scale_fill_manual(values=c('#c8f464','#ff6969')) +
+  # \_Change y axis to same scale as original ----
+  scale_y_continuous(
+    expand=c(0,0),
+    limits = c(0, 50000),
+    breaks = seq(0, 50000, 5000),
+    labels = ifelse(nchar(seq(0, 50000, 5000)) <= 3,
+                    as.character(seq(0, 50000, 5000)),
+                    sub("(.{1})(.*)", "\\1.\\2", 
+                        as.character(seq(0, 50000, 5000))
+                    )
+    )
+  ) +
+  # \_Add tick marks on x axis to look like the original plot ----
+  scale_x_continuous(
+    expand=c(0,0),
+    limits = c(min(df.tmp$group.id)-0.5,max(df.tmp$group.id)+0.5),
+    breaks = c(min(df.tmp$group.id)-0.5,
+               unique(df.tmp$group.id), 
+               unique(df.tmp$group.id) + 0.5
+               ),
+    labels = 
+      c("", 
+        as.character(unique(df.tmp$x.axis.Var)), 
+        rep(c(""), length(unique(df.tmp$x.axis.Var)))
+      )
+  ) +
+  # \_Theme options to make it look like the original plot ----
+  theme(
+    text = element_text(size = 10, color = "#4e4d47"),
+    axis.text = element_text(size = 10, color = "#4e4d47", face = "bold"),
+    axis.text.y = element_text(margin = margin(r = 0.5, unit = "cm")),
+    axis.ticks.x =
+      element_line(color =
+                     c("black",
+                       rep(NA, length(unique(df.tmp$x.axis.Var))),
+                       rep("black", length(unique(df.tmp$x.axis.Var))-1)
+                     )
+                   ),
+    axis.line = element_line(colour = "#4e4d47", size = 0.5),
+    axis.ticks.length = unit(.15, "cm"),
+    axis.title.x =       element_blank(),
+    axis.title.y =       element_blank(),
+    panel.background =   element_blank(),
+    plot.margin =        unit(c(1, 1, 1, 1), "lines"),
+    legend.text =        element_text(size = 10, 
+                                      color = "#4e4d47",
+                                      face = "bold",
+                                      margin = margin(l = 0.25, unit = "cm")
+                                      ),
+    legend.title =       element_blank()
+  )
+plot3
+```
+
+```{r}
+
+```
 
